@@ -1,38 +1,67 @@
-import React from 'react';
-import { View, Text, Button, StyleSheet, ScrollView } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+// screens/AdminScreen.js
+// Esta pantalla actúa como un contenedor que organiza los componentes del panel de administración.
 
-const AdminScreen = ({ navigation, route }) => {
-  // Accedemos a los datos pasados por el parámetro 'userData'
-  const { userData } = route.params;
+import React from 'react';
+import { View, Text, Button, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import ProductForm from '../components/products/ProductForm';
+import ProductList from '../components/products/ProductList';
+import useProducts from '../hooks/useProducts';
+
+const AdminScreen = ({ navigation }) => {
+  // Usamos el hook personalizado para manejar toda la lógica CRUD de los productos
+  const { products, isFetchingProducts, handleCreateProduct, fetchProducts, handleDeleteProduct } = useProducts();
+
+  // Función para cerrar la sesión del usuario
   const handleLogout = async () => {
     try {
-      // Elimina el token y el rol del almacenamiento
       await AsyncStorage.removeItem('userToken');
       await AsyncStorage.removeItem('userRole');
-      // Reemplaza la pantalla actual con la de Login
       navigation.replace('Login');
     } catch (e) {
-      console.error('Logout error:', e);
+      console.error('Logout error :', e);
     }
   };
 
-  return (
+    // Función para manejar la eliminación con una confirmación
+  const handleDelete = (productId) => {
+    Alert.alert(
+      "Confirmar Eliminación",
+      "¿Estás seguro de que quieres eliminar este producto?",
+      [
+        {
+          text: "cancelar",
+          style: "cancel"
+        },
+        {
+          text: "Eliminar",
+          onPress: () => handleDeleteProduct(productId),
+          style: "destructive"
+        }
+      ]
+    );
+  };
+
+   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Panel de Administrador</Text>
-      <Text style={styles.text}>¡Bienvenido, Administrador!</Text>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <Text style={styles.title}>Panel de Administración</Text>
+        <Text style={styles.text}>¡Bienvenido, Administrador!</Text>
+        
+        {/* Componente para el formulario de creación de productos */}
+        <ProductForm onSubmit={handleCreateProduct} />
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Datos del Usuario (JWT Decodificado):</Text>
-          {/* Mostramos el objeto JSON completo */}
-          <Text style={styles.cardText}>
-            {JSON.stringify(userData, null, 2)}
-          </Text>
-        </View>
+        {/* Componente para mostrar la lista de productos */}
+        <ProductList 
+          products={products}
+          isFetchingProducts={isFetchingProducts}
+          onRefresh={fetchProducts}
+          //onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
 
-
-      {/* Aquí irá el contenido específico para el administrador */}
-      <Button title="Cerrar Sesión" onPress={handleLogout} />
+        <Button title="Cerrar Sesión" onPress={handleLogout} color="#dc3545" />
+      </ScrollView>
     </View>
   );
 };
@@ -43,9 +72,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   scrollContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
     padding: 20,
+    alignItems: 'center',
   },
   title: {
     fontSize: 24,
@@ -59,31 +87,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     color: '#666',
   },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 15,
-    marginVertical: 10,
-    width: '100%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#444',
-  },
-  cardText: {
-    fontSize: 14,
-    color: '#555',
-    fontFamily: 'monospace',
-  }
 });
-
-
 
 export default AdminScreen;
